@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Person struct {
@@ -106,28 +108,28 @@ func TopJobByNumberInEachCity(persons []Person) (result map[string]string) {
 	return result
 }
 
-func AverageSalaryByJob(persons []Person) (result map[string]int) {
-	result = make(map[string]int)
+func AverageSalaryByJob(persons []Person) (result map[string]float64) {
+	result = make(map[string]float64)
 	jobs := GetPeopleByJob(persons)
 	for job, personsOfJob := range jobs {
-		sumSalary := 0
+		sumSalary := 0.0
 		for _, person := range personsOfJob {
-			sumSalary += person.Salary
+			sumSalary += float64(person.Salary)
 		}
-		result[job] = sumSalary / len(personsOfJob)
+		result[job] = HandleDecimal(sumSalary/float64(len(personsOfJob)), 1)
 	}
 	return result
 }
 
-func AverageSalaryByCity(persons []Person) (result map[string]int) {
-	result = make(map[string]int)
+func AverageSalaryByCity(persons []Person) (result map[string]float64) {
+	result = make(map[string]float64)
 	cities := GroupPeopleByCity(persons)
 	for city, personsOfCity := range cities {
-		sumSalary := 0
+		sumSalary := 0.0
 		for _, person := range personsOfCity {
-			sumSalary += person.Salary
+			sumSalary += float64(person.Salary)
 		}
-		result[city] = sumSalary / len(personsOfCity)
+		result[city] = HandleDecimal(sumSalary/float64(len(personsOfCity)), 1)
 	}
 	return result
 }
@@ -136,7 +138,7 @@ func FiveCitiesHasTopAverageSalary(persons []Person) (result []string) {
 	cities := AverageSalaryByCity(persons)
 	type kv struct {
 		Key   string
-		Value int
+		Value float64
 	}
 
 	var cities_arr []kv
@@ -155,7 +157,7 @@ func FiveCitiesHasTopAverageSalary(persons []Person) (result []string) {
 }
 
 func FiveCitiesHasTopSalaryForDeveloper(persons []Person) (result []string) {
-	avgSalaryOfDeveloperInEachCity := make(map[string]int)
+	avgSalaryOfDeveloperInEachCity := make(map[string]float64)
 	cities := GroupPeopleByCity(persons)
 	for city, personsOfCity := range cities {
 		avgSalaryOfJob := AverageSalaryByJob(personsOfCity)
@@ -163,7 +165,7 @@ func FiveCitiesHasTopSalaryForDeveloper(persons []Person) (result []string) {
 	}
 	type kv struct {
 		Key   string
-		Value int
+		Value float64
 	}
 
 	var cities_arr []kv
@@ -181,13 +183,23 @@ func FiveCitiesHasTopSalaryForDeveloper(persons []Person) (result []string) {
 	return result
 }
 
-func GetAge(age string) (result int) {
-	arr := strings.Split(age, "-")
-	year, _ := strconv.Atoi(arr[0])
-	//month, _ := strconv.Atoi(arr[1])
-	//day, _ := strconv.Atoi(arr[2])
-	result = 2021 - year
-	return result
+func GetAge(birthday string) int {
+	arr := strings.Split(birthday, "-")
+	yearOfBirth, _ := strconv.Atoi(arr[0])
+	monthOfBirth, _ := strconv.Atoi(arr[1])
+	dayOfBirth, _ := strconv.Atoi(arr[2])
+
+	year, month, day := time.Now().Date()
+
+	age := year - yearOfBirth
+	if int(month) < monthOfBirth {
+		age--
+	}
+	if (int(month) == monthOfBirth) && (day < dayOfBirth) {
+		age--
+	}
+
+	return age
 }
 
 func AverageAgePerJob(persons []Person) (result map[string]float64) {
@@ -198,7 +210,7 @@ func AverageAgePerJob(persons []Person) (result map[string]float64) {
 		for _, person := range personsOfJob {
 			sumAge += (float64)(GetAge(person.BirthDate))
 		}
-		result[job] = sumAge / (float64)(len(personsOfJob))
+		result[job] = HandleDecimal(sumAge/(float64)(len(personsOfJob)), 1)
 	}
 	return result
 }
@@ -211,9 +223,18 @@ func AverageAgePerCity(persons []Person) (result map[string]float64) {
 		for _, person := range personsOfCity {
 			sumAge += (float64)(GetAge(person.BirthDate))
 		}
-		result[city] = sumAge / (float64)(len(personsOfCity))
+		result[city] = HandleDecimal((sumAge / (float64)(len(personsOfCity))), 1)
 	}
 	return result
+}
+
+func Round(number float64) int {
+	return int(number + math.Copysign(0.5, number))
+}
+
+func HandleDecimal(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return float64(Round(num*output)) / output
 }
 
 func main() {
