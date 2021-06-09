@@ -279,4 +279,5 @@ func main() {
 
 	fmt.Println("-----Tuổi trung bình ở từng thành phố-----")
 	fmt.Println(AverageAgePerCity(persons))
+
 }
